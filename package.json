@@ -1,0 +1,28 @@
+{
+  "name": "ms-cursos-m3",
+  "version": "1.0.0",
+  "description": "Microservicio de cursos — preparación Módulo 3 — Steven Franco y Santiago Mejía",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --env-file=.env src/index.js",
+    "dev": "node --watch --env-file=.env src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Norduss/ms-cursos-m3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Norduss/ms-cursos-m3/issues"
+  },
+  "homepage": "https://github.com/Norduss/ms-cursos-m3#readme",
+  "dependencies": {
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.6"
+  }
+}
