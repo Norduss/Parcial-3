@@ -56,9 +56,22 @@ conexión MySQL con SELECT 1 antes de escuchar, aunque /health por sí solo tamp
 comprueba la existencia de las tablas. El listado autenticado permite revisar el
 acceso a la tabla cursos. Los resultados se registran al ejecutar las pruebas.
 
+## Colección Postman
+
+Importar en Postman el archivo
+[docs/M3-Preparacion-ms-cursos.postman_collection.json](docs/M3-Preparacion-ms-cursos.postman_collection.json).
+La colección **M3 - Preparación - ms-cursos** contiene 14 peticiones para enviar
+manualmente con **Send**, sin ambientes ni scripts automáticos.
+
+Completar las credenciales en las variables de la colección. Copiar los JWT de
+los logins a tokenAdmin y tokenEstudiante. Crear el curso con 04 antes de consultar
+con 03 y copiar su ID a cursoId para consultar, actualizar y eliminar únicamente
+ese registro de prueba. La [guía de Cursos](ms-cursos/README.md#autenticación-y-pruebas-manuales-con-postman)
+detalla el recorrido y los códigos HTTP esperados.
+
 ## Reutilización en las máquinas virtuales
 
-Se puede reutilizar el ms-usuarios existente en svrBog2, puerto 3001, conservando
+ms-usuarios ya está desplegado en svrBog2, puerto 3001. Se reutiliza conservando
 su código, administrador inicial y configuración de base de datos. Para el
 parcial, su variable ROLES debe conservar los roles existentes y agregar estudiante.
 
@@ -89,7 +102,7 @@ README de la copia describe también su uso local para desarrollo.
 - Registrar las evidencias reales y sus resultados en Postman.
 
 Estas tareas quedan pendientes de ejecución y verificación en ese entorno.
-La configuración del proxy para /cursos y una colección Postman exportada de
-Cursos también quedan por preparar si se solicitan. El repositorio actual no
-incluye esos artefactos. El script npm test de Cursos es el marcador inicial que
-termina con error, por lo que las instrucciones actuales describen pruebas manuales.
+La configuración del proxy para /cursos queda por preparar si se solicita durante
+el examen. La colección Postman ya está disponible en docs/ para pruebas locales.
+El script npm test de Cursos es el marcador inicial que termina con error. La
+verificación HTTP se realiza manualmente con la colección.

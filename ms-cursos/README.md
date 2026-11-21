@@ -168,34 +168,53 @@ mientras que el cuerpo de POST/PUT admite espacios exteriores que se eliminan.
 
 ## Autenticación y pruebas manuales con Postman
 
-1. Tener MySQL, la tabla cursos y ambos servicios locales disponibles, o acceso al
-   Usuarios existente con la misma clave JWT configurada en Cursos.
-2. En un environment privado de Postman, definir cursos_url como
-   http://127.0.0.1:3011 y usuarios_url como http://127.0.0.1:3001 para el recorrido local.
-   Definir email y password con una cuenta vigente, y token para el JWT recibido.
-   Estas variables se crean en Postman. El repositorio no incluye una colección
-   ni un environment exportados para Cursos.
-3. Enviar POST {{usuarios_url}}/usuarios/login con Content-Type: application/json
-   y el cuerpo siguiente, reemplazando localmente los valores indicados.
+La colección [M3-Preparacion-ms-cursos.postman_collection.json](../docs/M3-Preparacion-ms-cursos.postman_collection.json)
+está en docs/ de la raíz del repositorio. Contiene 14 peticiones y se utiliza
+manualmente, sin ambientes, scripts previos, scripts posteriores ni aserciones
+automáticas. Los códigos esperados aparecen en la descripción de cada petición.
 
-~~~json
-{"email":"<CORREO_DE_LA_CUENTA>","password":"<CONTRASEÑA_PRIVADA>"}
-~~~
+1. Tener disponibles MySQL, la tabla cursos y los servicios locales de Usuarios
+   en http://127.0.0.1:3001 y Cursos en http://127.0.0.1:3011, con la misma JWT_SECRET.
+2. En Postman, pulsar **Import**, seleccionar el JSON y abrir la colección
+   **M3 - Preparación - ms-cursos**. Mantener **No environment** seleccionado.
+3. En **Variables** de la colección, revisar adminEmail y estudianteEmail y
+   completar adminPassword y estudiantePassword localmente. Las cuentas deben
+   existir, estar activas y tener rol administrador y estudiante, respectivamente.
+   usuariosUrl y cursosUrl ya contienen las direcciones locales indicadas.
+4. Enviar **01 - Login administrador** con **Send** y copiar el campo token de
+   la respuesta a tokenAdmin en las variables de la colección. El login espera 200.
+5. Enviar **02 - Listar cursos**. Después enviar **04 - Crear curso**, usando
+   codigoPrueba disponible, y copiar el id recibido a cursoId. El valor inicial
+   de codigoPrueba es M3-PRUEBA-001. Revisar ese código antes de repetir una creación.
+6. Enviar **03 - Consultar curso por ID**, **05 - Actualizar curso** y
+   **06 - Eliminar curso**, conservando el ID del curso creado en 04. Los códigos
+   esperados son 200, 200 y 204. Mantener cursoId con ese ID para que **08 - Curso
+   inexistente** consulte el registro eliminado y espere 404. Los tres cursos
+   iniciales se conservan.
+7. Enviar **07 - Datos inválidos** para comprobar 400 y **09 - Código duplicado**
+   para comprobar 409. codigoDuplicado parte de RSM101 y debe corresponder a un
+   curso existente en el listado. Enviar **10 - Filtrar por semestre** para esperar
+   200. semestre parte de 2026-2 y debe tener formato AAAA-1 o AAAA-2.
+8. Enviar **11 - Login estudiante** y copiar el token recibido a tokenEstudiante.
+   Después enviar **12 - Consultar cursos como estudiante**, que espera 200, y
+   **13 - Crear curso como estudiante**, que espera 403.
+9. Enviar **14 - Consultar cursos sin token**, configurada con **No Auth**, para
+   comprobar 401. Los GET protegidos requieren JWT válido y las escrituras
+   requieren administrador. Las peticiones ya tienen configurado el Bearer
+   correspondiente a tokenAdmin o tokenEstudiante.
 
-4. Copiar el campo token de la respuesta a la variable privada token. En las
-   peticiones de Cursos, seleccionar Authorization, Bearer Token, con {{token}}.
-5. Enviar GET {{cursos_url}}/health, GET {{cursos_url}}/cursos y el filtro por
-   semestre. Health espera 200 público. Los listados autenticados esperan 200.
-6. Con administrador, crear un curso con código disponible, guardar su ID, consultar
-   ese ID, actualizarlo con el cuerpo completo y eliminar únicamente el registro de
-   prueba. Esperar 201, 200, 200 y 204. Consultar el ID eliminado debe producir 404.
-7. Revisar entradas inválidas con 400 y código duplicado con 409. Un curso inexistente
-   produce 404 al consultar, actualizar o eliminar. Una petición protegida sin token
-   o con token inválido o vencido debe dar 401.
-8. Iniciar sesión con estudiante, verificar GET 200 e intentar POST, PUT o DELETE
-   con ese token para comprobar 403. Revisar Test Results si se añaden aserciones.
+El orden manual recomendado es **01, 02, 04, 03, 05, 06, 07, 08, 09, 10, 11, 12,
+13 y 14**. Actualizar las variables manualmente cuando cambien los tokens o el ID.
+Revisar el estado HTTP recibido tras cada envío. Al carecer de aserciones, una
+indicación **No tests found** corresponde a una petición sin pruebas automáticas.
+Conservar las contraseñas y JWT como valores privados en Postman y vaciarlos antes
+de compartir o exportar la colección.
 
-Estos son procedimientos y resultados esperados. Esta revisión documental no
-realiza una nueva corrida ni atribuye cifras de pruebas aprobadas. El script
+ms-usuarios ya está desplegado en svrBog2, puerto 3001, y se reutilizará en las VMs.
+**ms-cursos se desplegará en las máquinas virtuales únicamente durante el examen.**
+Las URLs de la colección corresponden a la preparación local actual.
+
+Los códigos descritos son resultados esperados. Esta actualización documental no
+realiza una nueva ejecución ni atribuye cifras de pruebas aprobadas. El script
 npm test actual imprime el mensaje inicial de prueba pendiente y termina con
-código 1. Las pruebas descritas se ejecutan manualmente en Postman.
+código 1. La comprobación HTTP se realiza mediante los envíos manuales indicados.
