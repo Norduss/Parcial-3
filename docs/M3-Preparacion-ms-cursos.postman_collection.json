@@ -1,0 +1,884 @@
+{
+  "info": {
+    "name": "M3 - Preparación - ms-cursos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Preparación local del parcial M3. Completar adminEmail, adminPassword, estudianteEmail y estudiantePassword en las variables de esta colección con cuentas activas. Mantener Usuarios (3001), Cursos (3011) y MySQL disponibles, con JWT_SECRET compartida y esquema inicial de Cursos cargado. Ejecutar sin environment, una iteración y sin archivo de datos. Run collection ejecuta 01, 02, 04, 03 y luego 05 a 14 para consultar el curso recién creado. Los saltos setNextRequest solo actúan en Runner. Con Send, seguir las dependencias de cada descripción. Los únicos PUT/DELETE usan cursoId capturado en 04. Un curso pendiente se limpia con 06 antes de repetir. Las variables de tokens e IDs se administran automáticamente. Guardar variables del Runner para recuperar una ejecución interrumpida. Vaciar contraseñas y JWT antes de exportar o compartir. La prueba 09 necesita un curso existente, obtenido en 02."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{tokenAdmin}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "usuariosUrl",
+      "value": "http://127.0.0.1:3001",
+      "type": "string"
+    },
+    {
+      "key": "cursosUrl",
+      "value": "http://127.0.0.1:3011",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "estudianteEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "estudiantePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenEstudiante",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cursoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cursoEliminadoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigoPrueba",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigoDuplicado",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "semestre",
+      "value": "2026-2",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "for (const key of ['usuariosUrl', 'cursosUrl', 'tokenAdmin', 'tokenEstudiante', 'cursoId', 'cursoEliminadoId', 'codigoPrueba', 'codigoDuplicado', 'semestre']) {",
+          "  pm.variables.set(key, pm.collectionVariables.get(key) || '');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Login administrador",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{usuariosUrl}}/usuarios/login",
+        "description": "Completar adminEmail y adminPassword en las variables de esta colección con una cuenta activa de rol administrador. Guarda tokenAdmin automáticamente.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": {{emailJSON}}, \"password\": {{passwordJSON}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset('tokenAdmin');",
+              "pm.variables.set('tokenAdmin', '');",
+              "const email = pm.collectionVariables.get('adminEmail');",
+              "const password = pm.collectionVariables.get('adminPassword');",
+              "if (!email || !password) {",
+              "  pm.execution.setNextRequest(null);",
+              "  pm.execution.skipRequest();",
+              "  throw new Error('Completa adminEmail y adminPassword en las variables de la colección.');",
+              "}",
+              "pm.variables.set('emailJSON', JSON.stringify(email));",
+              "pm.variables.set('passwordJSON', JSON.stringify(password));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "let data;",
+              "try { data = pm.response.json(); } catch (_) {}",
+              "const valido = pm.response.code === 200 && data?.usuario?.rol === 'administrador' && typeof data?.token === 'string' && data.token.split('.').length === 3;",
+              "pm.test('Token JWT y rol administrador', () => pm.expect(valido).to.equal(true));",
+              "if (valido) {",
+              "  pm.collectionVariables.set('tokenAdmin', data.token);",
+              "  pm.variables.set('tokenAdmin', data.token);",
+              "} else {",
+              "  pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Listar cursos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Ejecutar después de 01. Guarda un código existente para 09. El esquema inicial debe estar cargado. En Runner continúa en 04 para crear el curso antes de consultarlo en 03."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "  const cursos = pm.response.json();",
+              "  pm.collectionVariables.set('codigoDuplicado', Array.isArray(cursos) && cursos.length ? cursos[0].codigo : '');",
+              "  pm.execution.setNextRequest('04 - Crear curso');",
+              "} else {",
+              "  pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Consultar curso por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos/{{cursoId}}",
+        "description": "Ejecutar 04 antes de enviar esta petición. Consulta exclusivamente el ID capturado en la creación. En Runner se ejecuta automáticamente después de 04 y continúa en 05."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"cursoId\",\"codigoPrueba\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.execution.setNextRequest('05 - Actualizar curso');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Crear curso",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Genera un código de prueba y guarda cursoId desde la respuesta. Si queda un curso pendiente, ejecutar 06 antes de repetir. En Runner continúa en 03.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": {{codigoPruebaJSON}},\n  \"nombre\": \"Curso de prueba M3\",\n  \"creditos\": 3,\n  \"cupo\": 30,\n  \"semestre\": {{semestreJSON}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('cursoId')) {",
+              "  pm.execution.setNextRequest(null);",
+              "  pm.execution.skipRequest();",
+              "  throw new Error('Hay un curso de prueba pendiente. Ejecuta 06 para limpiarlo antes de volver a crear.');",
+              "}",
+              "const codigo = 'M3-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8);",
+              "pm.collectionVariables.set('codigoPrueba', codigo);",
+              "pm.variables.set('codigoPrueba', codigo);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) {",
+              "  const id = pm.response.json().id;",
+              "  if (!Number.isInteger(id) || id <= 0) {",
+              "    pm.execution.setNextRequest(null);",
+              "    throw new Error('La creación no devolvió un ID válido. Revisar la respuesta antes de continuar.');",
+              "  }",
+              "  pm.collectionVariables.set('cursoId', id);",
+              "  pm.variables.set('cursoId', id);",
+              "  pm.execution.setNextRequest('03 - Consultar curso por ID');",
+              "} else {",
+              "  pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('codigoPruebaJSON', JSON.stringify(pm.collectionVariables.get('codigoPrueba') || ''));",
+              "pm.variables.set('semestreJSON', JSON.stringify(pm.collectionVariables.get('semestre') || ''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Actualizar curso",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{cursosUrl}}/cursos/{{cursoId}}",
+        "description": "Ejecutar después de 04. Envía todos los campos y actualiza únicamente el curso creado por esta colección.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": {{codigoPruebaJSON}},\n  \"nombre\": \"Curso de prueba M3 actualizado\",\n  \"creditos\": 4,\n  \"cupo\": 25,\n  \"semestre\": {{semestreJSON}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"cursoId\",\"codigoPrueba\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('codigoPruebaJSON', JSON.stringify(pm.collectionVariables.get('codigoPrueba') || ''));",
+              "pm.variables.set('semestreJSON', JSON.stringify(pm.collectionVariables.get('semestre') || ''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Eliminar curso",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos/{{cursoId}}",
+        "description": "Ejecutar después de 04 o 05. Elimina únicamente el curso de prueba capturado en cursoId. Conserva el ID eliminado para 08 y vacía cursoId al recibir 204."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"cursoId\",\"codigoPrueba\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code === 204) {",
+              "  pm.collectionVariables.set('cursoEliminadoId', pm.collectionVariables.get('cursoId'));",
+              "  pm.collectionVariables.unset('cursoId');",
+              "  pm.variables.set('cursoId', '');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Datos inválidos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Cuerpo inválido según el modelo real. Ejecutar después del login administrador.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": \"\",\n  \"nombre\": \"\",\n  \"creditos\": 0,\n  \"cupo\": 0,\n  \"semestre\": \"2026-3\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Curso inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos/{{cursoEliminadoId}}",
+        "description": "Ejecutar después de 06. Consulta el ID que esta colección acaba de eliminar."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"cursoEliminadoId\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Código duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Ejecutar después de 02 y del login administrador. Reutiliza un código observado en el listado. El registro existente se conserva.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": {{codigoDuplicadoJSON}},\n  \"nombre\": \"Intento de código duplicado\",\n  \"creditos\": 3,\n  \"cupo\": 30,\n  \"semestre\": {{semestreJSON}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"codigoDuplicado\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('codigoDuplicadoJSON', JSON.stringify(pm.collectionVariables.get('codigoDuplicado') || ''));",
+              "pm.variables.set('semestreJSON', JSON.stringify(pm.collectionVariables.get('semestre') || ''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Filtrar por semestre",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos?semestre={{semestre}}",
+        "description": "Ejecutar después del login administrador. semestre utiliza formato AAAA-1 o AAAA-2. Puede devolver un arreglo vacío."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenAdmin\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Login estudiante",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{usuariosUrl}}/usuarios/login",
+        "description": "Completar estudianteEmail y estudiantePassword en las variables de esta colección con una cuenta activa de rol estudiante. Guarda tokenEstudiante automáticamente.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": {{emailJSON}}, \"password\": {{passwordJSON}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset('tokenEstudiante');",
+              "pm.variables.set('tokenEstudiante', '');",
+              "const email = pm.collectionVariables.get('estudianteEmail');",
+              "const password = pm.collectionVariables.get('estudiantePassword');",
+              "if (!email || !password) {",
+              "  pm.execution.setNextRequest(null);",
+              "  pm.execution.skipRequest();",
+              "  throw new Error('Completa estudianteEmail y estudiantePassword en las variables de la colección.');",
+              "}",
+              "pm.variables.set('emailJSON', JSON.stringify(email));",
+              "pm.variables.set('passwordJSON', JSON.stringify(password));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "let data;",
+              "try { data = pm.response.json(); } catch (_) {}",
+              "const valido = pm.response.code === 200 && data?.usuario?.rol === 'estudiante' && typeof data?.token === 'string' && data.token.split('.').length === 3;",
+              "pm.test('Token JWT y rol estudiante', () => pm.expect(valido).to.equal(true));",
+              "if (valido) {",
+              "  pm.collectionVariables.set('tokenEstudiante', data.token);",
+              "  pm.variables.set('tokenEstudiante', data.token);",
+              "} else {",
+              "  pm.execution.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Consultar cursos como estudiante",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Ejecutar después de 11. Comprueba la lectura permitida al estudiante.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenEstudiante}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenEstudiante\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Crear curso como estudiante",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "Ejecutar después de 11. Envía datos válidos con rol estudiante y espera rechazo por permisos.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": \"M3-ESTUDIANTE\",\n  \"nombre\": \"Intento de estudiante\",\n  \"creditos\": 3,\n  \"cupo\": 30,\n  \"semestre\": {{semestreJSON}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenEstudiante}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "for (const key of [\"tokenEstudiante\"]) {",
+              "  if (!pm.collectionVariables.get(key)) {",
+              "    pm.execution.setNextRequest(null);",
+              "    pm.execution.skipRequest();",
+              "    throw new Error('Falta ' + key + '. Ejecuta primero el login o la preparación indicada en la descripción.');",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('semestreJSON', JSON.stringify(pm.collectionVariables.get('semestre') || ''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Consultar cursos sin token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{cursosUrl}}/cursos",
+        "description": "No Auth explícito para omitir el Bearer heredado de la colección.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
