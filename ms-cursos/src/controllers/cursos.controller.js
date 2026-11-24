@@ -18,9 +18,10 @@ function validarId(valor) {
 
 async function findAll(req, res, next) {
   try {
-    const cursos = await service.findAll({
-      semestre: req.query.semestre,
-    });
+    const cursos = await service.findAll(
+      { semestre: req.query.semestre },
+      req.headers.authorization
+    );
 
     res.status(200).json(cursos);
   } catch (error) {
@@ -31,7 +32,7 @@ async function findAll(req, res, next) {
 async function findById(req, res, next) {
   try {
     const id = validarId(req.params.id);
-    const curso = await service.findById(id);
+    const curso = await service.findById(id, req.headers.authorization);
 
     res.status(200).json(curso);
   } catch (error) {
@@ -41,7 +42,7 @@ async function findById(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const curso = await service.create(req.body);
+    const curso = await service.create(req.body, req.headers.authorization);
 
     res.location(`${req.baseUrl}/${curso.id}`);
     res.status(201).json(curso);
@@ -53,7 +54,7 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const id = validarId(req.params.id);
-    const curso = await service.update(id, req.body);
+    const curso = await service.update(id, req.body, req.headers.authorization);
 
     res.status(200).json(curso);
   } catch (error) {

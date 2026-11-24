@@ -59,7 +59,7 @@ app.use((error, req, res, next) => {
   }
 
   const respuesta = {
-    mensaje: status >= 500 ? 'Error interno del servidor' : error.message,
+    mensaje: status === 500 ? 'Error interno del servidor' : error.message,
   };
 
   if (status < 500 && error.detalles !== undefined) {

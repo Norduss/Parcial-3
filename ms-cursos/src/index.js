@@ -8,6 +8,7 @@ async function iniciar() {
     'DB_USER',
     'DB_PASSWORD',
     'JWT_SECRET',
+    'SALONES_URL',
   ];
 
   for (const variable of variablesRequeridas) {
