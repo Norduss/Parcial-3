@@ -35,14 +35,15 @@ async function findByCodigo(codigo) {
 
 async function create(curso) {
   const [resultado] = await pool.execute(
-    `INSERT INTO cursos (codigo, nombre, creditos, cupo, semestre)
-     VALUES (?, ?, ?, ?, ?)`,
+    `INSERT INTO cursos (codigo, nombre, creditos, cupo, semestre, salon_id)
+     VALUES (?, ?, ?, ?, ?, ?)`,
     [
       curso.codigo,
       curso.nombre,
       curso.creditos,
       curso.cupo,
       curso.semestre,
+      curso.salon_id,
     ]
   );
 
@@ -52,7 +53,7 @@ async function create(curso) {
 async function update(id, curso) {
   await pool.execute(
     `UPDATE cursos
-     SET codigo = ?, nombre = ?, creditos = ?, cupo = ?, semestre = ?
+     SET codigo = ?, nombre = ?, creditos = ?, cupo = ?, semestre = ?, salon_id = ?
      WHERE id = ?`,
     [
       curso.codigo,
@@ -60,6 +61,7 @@ async function update(id, curso) {
       curso.creditos,
       curso.cupo,
       curso.semestre,
+      curso.salon_id,
       id,
     ]
   );

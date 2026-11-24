@@ -5,6 +5,14 @@ function validarCurso(datos) {
 
   const errores = [];
 
+  if (
+    !Number.isInteger(datos.salon_id) ||
+    datos.salon_id <= 0 ||
+    datos.salon_id > 2147483647
+  ) {
+    errores.push('salon_id debe ser un entero positivo válido para MySQL');
+  }
+
   for (const [campo, limite] of [['codigo', 30], ['nombre', 120]]) {
     if (typeof datos[campo] !== 'string' || datos[campo].trim() === '') {
       errores.push(`${campo} es obligatorio`);
@@ -46,6 +54,7 @@ function construirCurso(datos) {
     creditos: datos.creditos,
     cupo: datos.cupo,
     semestre: datos.semestre.trim(),
+    salon_id: datos.salon_id,
   };
 }
 
